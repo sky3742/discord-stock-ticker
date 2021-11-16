@@ -188,9 +188,9 @@ func (m *Manager) addTicker(crypto bool, stock *Ticker, update bool) {
 	// query
 	var existingId int
 	if crypto {
-		stmt, err := m.DB.Prepare("SELECT id FROM tickers WHERE name = ? LIMIT 1")
+		stmt, err := m.DB.Prepare("SELECT id FROM tickers WHERE name = $1 LIMIT 1")
 		if err != nil {
-			logger.Warningf("Unable to query ticker in db %s: %s", id, err)
+			logger.Warningf("Unable to prepare query ticker in db %s: %s", id, err)
 			return
 		}
 
@@ -203,13 +203,13 @@ func (m *Manager) addTicker(crypto bool, stock *Ticker, update bool) {
 		for rows.Next() {
 			err = rows.Scan(&existingId)
 			if err != nil {
-				logger.Warningf("Unable to query ticker in db %s: %s", id, err)
+				logger.Warningf("Unable to scan query ticker in db %s: %s", id, err)
 				return
 			}
 		}
 		rows.Close()
 	} else {
-		stmt, err := m.DB.Prepare("SELECT id FROM tickers WHERE ticker = ?")
+		stmt, err := m.DB.Prepare("SELECT id FROM tickers WHERE ticker = $1")
 		if err != nil {
 			logger.Warningf("Unable to query ticker in db %s: %s", id, err)
 			return
@@ -234,45 +234,45 @@ func (m *Manager) addTicker(crypto bool, stock *Ticker, update bool) {
 	if existingId != 0 {
 
 		// update entry in db
-		stmt, err := m.DB.Prepare("update tickers set clientId = ?, token = ?, ticker = ?, name = ?, nickname = ?, color = ?, crypto = ?, activity = ?, decorator = ?, decimals = ?, currency = ?, currencySymbol = ?, pair = ?, pairFlip = ?, twelveDataKey = ?, frequency = ? WHERE id = ?")
+		stmt, err := m.DB.Prepare("update tickers set clientId = $1, token = $2, ticker = $3, name = $4, nickname = $5, color = $6, crypto = $7, activity = $8, decorator = $9, decimals = $10, currency = $11, currencySymbol = $12, pair = $13, pairFlip = $14, twelveDataKey = $15, frequency = $16 WHERE id = $17")
 		if err != nil {
 			logger.Warningf("Unable to update ticker in db %s: %s", id, err)
 			return
 		}
 
-		res, err := stmt.Exec(stock.ClientID, stock.token, stock.Ticker, stock.Name, stock.Nickname, stock.Color, crypto, stock.Activity, stock.Decorator, stock.Decimals, stock.Currency, stock.CurrencySymbol, stock.Pair, stock.PairFlip, stock.TwelveDataKey, stock.Frequency, existingId)
+		_, err = stmt.Exec(stock.ClientID, stock.token, stock.Ticker, stock.Name, stock.Nickname, stock.Color, crypto, stock.Activity, stock.Decorator, stock.Decimals, stock.Currency, stock.CurrencySymbol, stock.Pair, stock.PairFlip, stock.TwelveDataKey, stock.Frequency, existingId)
 		if err != nil {
 			logger.Warningf("Unable to update ticker in db %s: %s", id, err)
 			return
 		}
 
-		_, err = res.LastInsertId()
-		if err != nil {
-			logger.Warningf("Unable to update ticker in db %s: %s", id, err)
-			return
-		}
+		// _, err = res.LastInsertId()
+		// if err != nil {
+		// 	logger.Warningf("Unable to update ticker in db %s: %s", id, err)
+		// 	return
+		// }
 
 		logger.Infof("Updated ticker in db %s", id)
 	} else {
 
 		// store new entry in db
-		stmt, err := m.DB.Prepare("INSERT INTO tickers(clientId, token, ticker, name, nickname, color, crypto, activity, decorator, decimals, currency, currencySymbol, pair, pairFlip, twelveDataKey, frequency) values(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)")
+		stmt, err := m.DB.Prepare("INSERT INTO tickers(clientId, token, ticker, name, nickname, color, crypto, activity, decorator, decimals, currency, currencySymbol, pair, pairFlip, twelveDataKey, frequency) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)")
 		if err != nil {
 			logger.Warningf("Unable to store ticker in db %s: %s", id, err)
 			return
 		}
 
-		res, err := stmt.Exec(stock.ClientID, stock.token, stock.Ticker, stock.Name, stock.Nickname, stock.Color, crypto, stock.Activity, stock.Decorator, stock.Decimals, stock.Currency, stock.CurrencySymbol, stock.Pair, stock.PairFlip, stock.TwelveDataKey, stock.Frequency)
+		_, err = stmt.Exec(stock.ClientID, stock.token, stock.Ticker, stock.Name, stock.Nickname, stock.Color, crypto, stock.Activity, stock.Decorator, stock.Decimals, stock.Currency, stock.CurrencySymbol, stock.Pair, stock.PairFlip, stock.TwelveDataKey, stock.Frequency)
 		if err != nil {
 			logger.Warningf("Unable to store ticker in db %s: %s", id, err)
 			return
 		}
 
-		_, err = res.LastInsertId()
-		if err != nil {
-			logger.Warningf("Unable to store ticker in db %s: %s", id, err)
-			return
-		}
+		// _, err = res.LastInsertId()
+		// if err != nil {
+		// 	logger.Warningf("Unable to store ticker in db %s: %s", id, err)
+		// 	return
+		// }
 	}
 }
 
@@ -299,7 +299,7 @@ func (m *Manager) DeleteTicker(w http.ResponseWriter, r *http.Request) {
 	if m.DB != noDB {
 		// remove from db
 		if m.WatchingTicker[id].Crypto {
-			stmt, err := m.DB.Prepare("DELETE FROM tickers WHERE name = ?")
+			stmt, err := m.DB.Prepare("DELETE FROM tickers WHERE name = $1")
 			if err != nil {
 				logger.Warningf("Unable to query ticker in db %s: %s", id, err)
 				return
@@ -311,7 +311,7 @@ func (m *Manager) DeleteTicker(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 		} else {
-			stmt, err := m.DB.Prepare("DELETE FROM tickers WHERE ticker = ?")
+			stmt, err := m.DB.Prepare("DELETE FROM tickers WHERE ticker = $1")
 			if err != nil {
 				logger.Warningf("Unable to query ticker in db %s: %s", id, err)
 				return

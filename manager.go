@@ -3,15 +3,15 @@ package main
 import (
 	"context"
 	"database/sql"
-	"net/http"
-	"sync"
-	"time"
-
 	"github.com/go-redis/redis/v8"
 	"github.com/gorilla/mux"
-	_ "github.com/mattn/go-sqlite3"
+	_ "github.com/lib/pq"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"net/http"
+	"os"
+	"sync"
+	"time"
 )
 
 var (
@@ -182,7 +182,7 @@ func dbInit(fileName string) *sql.DB {
 		return db
 	}
 
-	db, err := sql.Open("sqlite3", fileName)
+	db, err := sql.Open("postgres", os.Getenv("DATABASE_URL"))
 	if err != nil {
 		logger.Errorf("Unable to open db file: %s\n", err)
 		logger.Warning("Will not be storing state.")
@@ -190,83 +190,83 @@ func dbInit(fileName string) *sql.DB {
 	}
 
 	bootstrap := `CREATE TABLE IF NOT EXISTS tickers (
-		id integer primary key autoincrement,
-		clientId string,
-		token string,
+		id serial primary key,
+		clientId text,
+		token text,
 		frequency integer,
-		ticker string,
-		name string,
+		ticker text,
+		name text,
 		nickname bool,
 		color bool,
 		crypto bool,
-		activity string,
-		decorator string,
+		activity text,
+		decorator text,
 		decimals integer,
-		currency string,
-		currencySymbol string,
-		pair string,
+		currency text,
+		currencySymbol text,
+		pair text,
 		pairFlip bool,
-		twelveDataKey string
+		twelveDataKey text
 	);
 	CREATE TABLE IF NOT EXISTS marketcaps (
-		id integer primary key autoincrement,
-		clientId string,
-		token string,
+		id serial primary key,
+		clientId text,
+		token text,
 		frequency integer,
-		ticker string,
-		name string,
+		ticker text,
+		name text,
 		nickname bool,
 		color bool,
-		activity string,
-		decorator string,
+		activity text,
+		decorator text,
 		decimals integer,
-		currency string,
-		currencySymbol string
+		currency text,
+		currencySymbol text
 	);
 	CREATE TABLE IF NOT EXISTS tokens (
-		id integer primary key autoincrement,
-		clientId string,
-		token string,
+		id serial primary key,
+		clientId text,
+		token text,
 		frequency integer,
-		name string,
+		name text,
 		nickname bool,
 		color bool,
-		activity string,
-		network string,
-		contract string,
-		decorator string,
+		activity text,
+		network text,
+		contract text,
+		decorator text,
 		decimals integer,
-		source string
+		source text
 	);
 	CREATE TABLE IF NOT EXISTS holders (
-		id integer primary key autoincrement,
-		clientId string,
-		token string,
+		id serial primary key,
+		clientId text,
+		token text,
 		frequency integer,
 		nickname bool,
-		activity string,
-		network string,
-		address string
+		activity text,
+		network text,
+		address text
 	);
 	CREATE TABLE IF NOT EXISTS gases (
-		id integer primary key autoincrement,
-		clientId string,
-		token string,
+		id serial primary key,
+		clientId text,
+		token text,
 		frequency integer,
 		nickname bool,
-		network string
+		network text
 	);
 	CREATE TABLE IF NOT EXISTS boards (
-		id integer primary key autoincrement,
-		clientId string,
-		token string,
+		id serial primary key,
+		clientId text,
+		token text,
 		frequency integer,
-		name string,
+		name text,
 		nickname bool,
 		color bool,
 		crypto bool,
-		header string,
-		items string
+		header text,
+		items text
 	);`
 
 	_, err = db.Exec(bootstrap)
